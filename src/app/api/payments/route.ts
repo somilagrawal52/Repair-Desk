@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get("orgId") || INITIAL_ORG_ID;
 
-    const payments = dataStore.getAllPayments(orgId);
+    const payments = await dbService.getAllPayments(orgId);
     return NextResponse.json({ success: true, payments });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch payments";
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = dataStore.recordPayment(
+    const result = await dbService.recordPayment(
       orgId,
       body.ticket_id,
       amount,

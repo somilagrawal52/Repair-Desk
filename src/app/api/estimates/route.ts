@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const estimate = dataStore.createEstimate(
+    const estimate = await dbService.createEstimate(
       orgId,
       body.ticket_id,
       body.items,

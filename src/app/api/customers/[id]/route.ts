@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const customerId = params.id;
-    const customer = dataStore.getCustomerById(customerId);
+    const customer = await dbService.getCustomerById(customerId);
 
     if (!customer) {
       return NextResponse.json(
@@ -18,8 +18,10 @@ export async function GET(
       );
     }
 
-    const devices = dataStore.getDevicesByCustomerId(customerId);
-    const allTickets = dataStore.getTickets(customer.organization_id);
+    const [devices, allTickets] = await Promise.all([
+      dbService.getDevicesByCustomerId(customerId),
+      dbService.getTickets(customer.organization_id),
+    ]);
     const tickets = allTickets.filter((t) => t.customer_id === customerId);
 
     return NextResponse.json({
@@ -42,7 +44,7 @@ export async function PATCH(
     const customerId = params.id;
     const body = await request.json();
 
-    const updated = dataStore.updateCustomer(customerId, body);
+    const updated = await dbService.updateCustomer(customerId, body);
     return NextResponse.json({ success: true, customer: updated });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to update customer";

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const ticketId = params.id;
-    const ticket = dataStore.getTicketById(ticketId);
+    const ticket = await dbService.getTicketById(ticketId);
 
     if (!ticket) {
       return NextResponse.json(
@@ -18,12 +18,14 @@ export async function GET(
       );
     }
 
-    const history = dataStore.getStatusHistory(ticketId);
-    const notes = dataStore.getNotes(ticketId);
-    const estimates = dataStore.getEstimatesByTicketId(ticketId);
-    const payments = dataStore.getPaymentsByTicketId(ticketId);
-    const receipt = dataStore.getReceiptByTicketId(ticketId);
-    const organization = dataStore.getOrganization(ticket.organization_id);
+    const [history, notes, estimates, payments, receipt, organization] = await Promise.all([
+      dbService.getStatusHistory(ticketId),
+      dbService.getNotes(ticketId),
+      dbService.getEstimatesByTicketId(ticketId),
+      dbService.getPaymentsByTicketId(ticketId),
+      dbService.getReceiptByTicketId(ticketId),
+      dbService.getOrganization(ticket.organization_id),
+    ]);
 
     return NextResponse.json({
       success: true,
@@ -58,14 +60,14 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      updatedTicket = dataStore.updateTicketStatus(
+      updatedTicket = await dbService.updateTicketStatus(
         ticketId,
         body.status,
         body.staffId,
         body.notes
       );
     } else if (body.action === "assign_technician") {
-      updatedTicket = dataStore.assignTechnician(
+      updatedTicket = await dbService.assignTechnician(
         ticketId,
         body.technicianId,
         body.staffId
@@ -77,7 +79,7 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      updatedTicket = dataStore.completeHandover(
+      updatedTicket = await dbService.completeHandover(
         ticketId,
         body.recipientName,
         body.handoverNotes,

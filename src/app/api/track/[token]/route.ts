@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    const ticket = dataStore.getTicketByTrackingToken(token);
+    const ticket = await dbService.getTicketByTrackingToken(token);
     if (!ticket) {
       return NextResponse.json(
         { success: false, error: "No repair found for this tracking link" },
@@ -24,9 +24,11 @@ export async function GET(
       );
     }
 
-    const organization = dataStore.getOrganization(ticket.organization_id);
-    const history = dataStore.getStatusHistory(ticket.id);
-    const allNotes = dataStore.getNotes(ticket.id);
+    const [organization, history, allNotes] = await Promise.all([
+      dbService.getOrganization(ticket.organization_id),
+      dbService.getStatusHistory(ticket.id),
+      dbService.getNotes(ticket.id),
+    ]);
 
     // Strictly filter out internal and diagnostic notes
     const customerVisibleNotes = allNotes

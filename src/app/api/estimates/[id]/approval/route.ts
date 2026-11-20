@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export async function POST(
       );
     }
 
-    const updated = dataStore.recordEstimateApproval(estimateId, {
+    const updated = await dbService.recordEstimateApproval(estimateId, {
       status: body.status,
       channel: body.channel,
       notes: body.notes,

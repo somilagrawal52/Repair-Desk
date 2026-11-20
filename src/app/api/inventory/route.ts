@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,7 +10,7 @@ export async function GET(request: NextRequest) {
     const orgId = searchParams.get("orgId") || INITIAL_ORG_ID;
     const query = searchParams.get("q")?.toLowerCase();
 
-    let items = dataStore.getInventory(orgId);
+    let items = await dbService.getInventory(orgId);
 
     if (query) {
       items = items.filter(
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const item = dataStore.createInventoryItem(orgId, {
+    const item = await dbService.createInventoryItem(orgId, {
       name: body.name,
       sku: body.sku,
       category: body.category,

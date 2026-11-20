@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +12,7 @@ export async function POST(
     const body = await request.json();
 
     const quantity = Number(body.quantity) || 1;
-    const result = dataStore.consumeInventoryPart(
+    const result = await dbService.consumeInventoryPart(
       itemId,
       quantity,
       body.ticketId,

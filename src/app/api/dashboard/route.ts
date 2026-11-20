@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const orgId = searchParams.get("orgId") || INITIAL_ORG_ID;
 
-    const metrics = dataStore.getDashboardMetrics(orgId);
-    const recentTickets = dataStore.getTickets(orgId).slice(0, 5);
+    const [metrics, allTickets] = await Promise.all([
+      dbService.getDashboardMetrics(orgId),
+      dbService.getTickets(orgId),
+    ]);
+    const recentTickets = allTickets.slice(0, 5);
 
     return NextResponse.json({
       success: true,

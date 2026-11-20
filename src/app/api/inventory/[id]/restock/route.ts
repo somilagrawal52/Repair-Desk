@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export async function POST(
       );
     }
 
-    const item = dataStore.restockInventoryPart(itemId, quantity, body.staffId);
+    const item = await dbService.restockInventoryPart(itemId, quantity, body.staffId);
     return NextResponse.json({ success: true, item });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to restock part";

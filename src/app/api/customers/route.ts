@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,7 +10,7 @@ export async function GET(request: NextRequest) {
     const orgId = searchParams.get("orgId") || INITIAL_ORG_ID;
     const query = searchParams.get("q")?.toLowerCase();
 
-    let customers = dataStore.getCustomers(orgId);
+    let customers = await dbService.getCustomers(orgId);
 
     if (query) {
       customers = customers.filter(
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check duplicate phone warning
-    const existing = dataStore.findCustomerByPhone(body.phone, orgId);
+    const existing = await dbService.findCustomerByPhone(body.phone, orgId);
     if (existing && !body.allowDuplicate) {
       return NextResponse.json(
         {
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const customer = dataStore.createCustomer(orgId, {
+    const customer = await dbService.createCustomer(orgId, {
       full_name: body.full_name,
       phone: body.phone,
       email: body.email,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export async function POST(
     }
 
     const noteType = body.note_type || "internal";
-    const note = dataStore.addNote(
+    const note = await dbService.addNote(
       ticketId,
       body.content,
       noteType,

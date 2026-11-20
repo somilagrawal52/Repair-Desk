@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { dataStore } from "@/lib/data-service";
+import { dbService } from "@/lib/db-service";
 import { INITIAL_ORG_ID } from "@/lib/mock-data";
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category");
     const query = searchParams.get("q")?.toLowerCase();
 
-    let tickets = dataStore.getTickets(orgId);
+    let tickets = await dbService.getTickets(orgId);
 
     if (status && status !== "all") {
       tickets = tickets.filter((t) => t.current_status === status);
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const ticket = dataStore.createTicket(orgId, {
+    const ticket = await dbService.createTicket(orgId, {
       customerId: body.customerId,
       customerData: body.customerData,
       deviceData: body.deviceData,

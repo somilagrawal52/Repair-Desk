@@ -140,6 +140,7 @@ function RepairDetailsContent() {
 
   useEffect(() => {
     fetchTicketDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
 
   useEffect(() => {
