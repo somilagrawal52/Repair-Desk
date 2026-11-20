@@ -52,6 +52,11 @@ class DataStore {
 
   private ticketCounter: number = 6;
   private receiptCounter: number = 6;
+  private idCounter: number = 1000;
+
+  private generateUniqueId(prefix: string): string {
+    return `${prefix}-${Date.now()}-${++this.idCounter}-${Math.random().toString(36).substring(2, 7)}`;
+  }
 
   // --------------------------------------------------------------------------
   // ORGANIZATION & STAFF
@@ -83,7 +88,7 @@ class DataStore {
   ): OrganizationMember {
     const newMember: OrganizationMember = {
       ...member,
-      id: `staff-${Date.now()}`,
+      id: this.generateUniqueId("staff"),
       organization_id: orgId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -124,7 +129,7 @@ class DataStore {
     }
   ): Customer {
     const newCustomer: Customer = {
-      id: `cust-${Date.now()}`,
+      id: this.generateUniqueId("cust"),
       organization_id: orgId,
       full_name: data.full_name.trim(),
       phone: data.phone.trim(),
@@ -181,7 +186,7 @@ class DataStore {
   ): Device {
     const newDevice: Device = {
       ...data,
-      id: `dev-${Date.now()}`,
+      id: this.generateUniqueId("dev"),
       organization_id: orgId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -303,7 +308,7 @@ class DataStore {
     const now = new Date().toISOString();
 
     const newTicket: RepairTicket = {
-      id: `ticket-${Date.now()}`,
+      id: this.generateUniqueId("ticket"),
       organization_id: orgId,
       ticket_number: ticketNumber,
       customer_id: customer.id,
@@ -331,7 +336,7 @@ class DataStore {
       : undefined;
 
     this.statusHistories.push({
-      id: `hist-${Date.now()}`,
+      id: this.generateUniqueId("hist"),
       ticket_id: newTicket.id,
       old_status: null,
       new_status: "received",
@@ -372,7 +377,7 @@ class DataStore {
     const staff = staffId ? this.getStaffById(staffId) : undefined;
 
     this.statusHistories.push({
-      id: `hist-${Date.now()}`,
+      id: this.generateUniqueId("hist"),
       ticket_id: ticket.id,
       old_status: oldStatus,
       new_status: newStatus,
@@ -426,7 +431,7 @@ class DataStore {
     const staff = staffId ? this.getStaffById(staffId) : undefined;
 
     this.statusHistories.push({
-      id: `hist-${Date.now()}`,
+      id: this.generateUniqueId("hist"),
       ticket_id: ticket.id,
       old_status: "ready_for_pickup",
       new_status: "delivered",
@@ -462,7 +467,7 @@ class DataStore {
   ): TicketNote {
     const staff = staffId ? this.getStaffById(staffId) : undefined;
     const newNote: TicketNote = {
-      id: `note-${Date.now()}`,
+      id: this.generateUniqueId("note"),
       ticket_id: ticketId,
       author_id: staff?.id || null,
       author_name: staff?.full_name || "Staff Member",
@@ -497,11 +502,11 @@ class DataStore {
     if (!ticket) throw new Error("Ticket not found");
 
     let subtotal = 0;
-    const estimateItems: EstimateItem[] = items.map((item, idx) => {
+    const estimateItems: EstimateItem[] = items.map((item) => {
       const total_price = Math.round(item.quantity * item.unit_price * 100) / 100;
       subtotal += total_price;
       return {
-        id: `est-item-${Date.now()}-${idx}`,
+        id: this.generateUniqueId("est-item"),
         estimate_id: "",
         item_type: item.item_type,
         description: item.description,
@@ -517,7 +522,7 @@ class DataStore {
     const total_amount = subtotal;
 
     const newEstimate: Estimate = {
-      id: `est-${Date.now()}`,
+      id: this.generateUniqueId("est"),
       organization_id: orgId,
       ticket_id: ticketId,
       revision_number: this.estimates.filter((e) => e.ticket_id === ticketId).length + 1,
@@ -564,7 +569,7 @@ class DataStore {
     estimate.status = params.status;
     estimate.updated_at = new Date().toISOString();
     estimate.approval = {
-      id: `appr-${Date.now()}`,
+      id: this.generateUniqueId("appr"),
       estimate_id: estimate.id,
       status: params.status,
       channel: params.channel,
@@ -623,7 +628,7 @@ class DataStore {
     const now = new Date().toISOString();
 
     const payment: Payment = {
-      id: `pay-${Date.now()}`,
+      id: this.generateUniqueId("pay"),
       organization_id: orgId,
       ticket_id: ticket.id,
       ticket_number: ticket.ticket_number,
@@ -660,7 +665,7 @@ class DataStore {
     const receiptYear = new Date().getFullYear();
     const receiptNum = `RCP-${receiptYear}-${String(this.receiptCounter++).padStart(6, "0")}`;
     const receipt: Receipt = {
-      id: `rcpt-${Date.now()}`,
+      id: this.generateUniqueId("rcpt"),
       organization_id: orgId,
       ticket_id: ticket.id,
       receipt_number: receiptNum,
@@ -715,7 +720,7 @@ class DataStore {
 
     const newItem: InventoryItem = {
       ...data,
-      id: `inv-${Date.now()}`,
+      id: this.generateUniqueId("inv"),
       organization_id: orgId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),

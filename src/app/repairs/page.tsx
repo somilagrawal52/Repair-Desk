@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -23,7 +23,7 @@ import { RepairTicket, RepairStatus, DeviceCategory } from "@/types";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 
-export default function RepairsPage() {
+function RepairsList() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const { canIntakeDevices } = useAuth();
@@ -305,5 +305,13 @@ export default function RepairsPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function RepairsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500">Loading repairs directory...</div>}>
+      <RepairsList />
+    </Suspense>
   );
 }

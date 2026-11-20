@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -62,7 +62,7 @@ const STATUS_PIPELINE: RepairStatus[] = [
   "delivered",
 ];
 
-export default function RepairDetailsPage() {
+function RepairDetailsContent() {
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1278,5 +1278,13 @@ export default function RepairDetailsPage() {
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function RepairDetailsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500">Loading repair details...</div>}>
+      <RepairDetailsContent />
+    </Suspense>
   );
 }
