@@ -9,7 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:seed": "tsx scripts/seed-mongo.ts"
+    "db:seed": "tsx scripts/seed-mongo.ts",
+    "setup": "tsx scripts/setup-production.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^7.0.7",
