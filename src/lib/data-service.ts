@@ -520,6 +520,10 @@ class DataStore {
     return this.estimates.filter((e) => e.ticket_id === ticketId);
   }
 
+  getAllEstimates(orgId: string = INITIAL_ORG_ID): Estimate[] {
+    return this.estimates.filter((e) => e.organization_id === orgId);
+  }
+
   createEstimate(
     orgId: string,
     ticketId: string,

@@ -3,6 +3,7 @@ import { dataStore } from "./data-service";
 import {
   Organization,
   OrganizationMember,
+  UserRole,
   Customer,
   Device,
   RepairTicket,
@@ -34,6 +35,17 @@ class DbService {
     return dataStore.getOrganization(orgId);
   }
 
+  async updateOrganization(orgId: string = INITIAL_ORG_ID, updates: Partial<Organization>): Promise<Organization> {
+    if (this.useMongo) {
+      try {
+        return await mongoService.updateOrganization(orgId, updates);
+      } catch (e) {
+        console.warn("MongoDB updateOrganization fallback to memory:", e);
+      }
+    }
+    return dataStore.updateOrganization(orgId, updates);
+  }
+
   async getStaffMembers(orgId: string = INITIAL_ORG_ID): Promise<OrganizationMember[]> {
     if (this.useMongo) {
       try {
@@ -44,6 +56,27 @@ class DbService {
       }
     }
     return dataStore.getStaffMembers(orgId);
+  }
+
+  async createStaffMember(
+    orgId: string = INITIAL_ORG_ID,
+    data: { full_name: string; email: string; role: UserRole; password?: string }
+  ): Promise<OrganizationMember> {
+    if (this.useMongo) {
+      try {
+        return await mongoService.createStaffMember(orgId, data);
+      } catch (e) {
+        console.warn("MongoDB createStaffMember fallback to memory:", e);
+      }
+    }
+    return dataStore.addStaffMember(orgId, {
+      organization_id: orgId,
+      user_id: `usr-${Date.now()}`,
+      email: data.email,
+      full_name: data.full_name,
+      role: data.role,
+      is_active: true,
+    });
   }
 
   async getCustomers(orgId: string = INITIAL_ORG_ID): Promise<Customer[]> {
@@ -297,6 +330,18 @@ class DbService {
       }
     }
     return dataStore.getEstimatesByTicketId(ticketId);
+  }
+
+  async getAllEstimates(orgId: string = INITIAL_ORG_ID): Promise<Estimate[]> {
+    if (this.useMongo) {
+      try {
+        const estimates = await mongoService.getAllEstimates(orgId);
+        if (estimates.length > 0) return estimates;
+      } catch (e) {
+        console.warn("MongoDB getAllEstimates fallback to memory:", e);
+      }
+    }
+    return dataStore.getAllEstimates(orgId);
   }
 
   async createEstimate(

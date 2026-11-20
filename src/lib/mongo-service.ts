@@ -16,6 +16,7 @@ import { AuditLogModel } from "./models/AuditLog";
 import {
   Organization,
   OrganizationMember,
+  UserRole,
   Customer,
   Device,
   RepairTicket,
@@ -60,6 +61,34 @@ class MongoService {
     };
   }
 
+  async updateOrganization(orgId: string = INITIAL_ORG_ID, updates: Partial<Organization>): Promise<Organization> {
+    await connectToDatabase();
+    const doc = await OrganizationModel.findOneAndUpdate(
+      { orgId },
+      { $set: updates },
+      { new: true }
+    );
+    if (!doc) throw new Error("Organization not found");
+    return {
+      id: doc.orgId,
+      name: doc.name,
+      slug: doc.slug,
+      phone: doc.phone,
+      email: doc.email,
+      address: doc.address,
+      city: doc.city,
+      state: doc.state,
+      country: doc.country,
+      currency: doc.currency,
+      timezone: doc.timezone,
+      logo_url: doc.logo_url || null,
+      ticket_prefix: doc.ticket_prefix,
+      repair_terms: doc.repair_terms,
+      created_at: doc.created_at.toISOString(),
+      updated_at: doc.updated_at.toISOString(),
+    };
+  }
+
   async getStaffMembers(orgId: string = INITIAL_ORG_ID): Promise<OrganizationMember[]> {
     await connectToDatabase();
     const docs = await UserModel.find({ organization_id: orgId, is_active: true });
@@ -80,6 +109,44 @@ class MongoService {
     await connectToDatabase();
     const doc = await UserModel.findOne({ staffId });
     if (!doc) return null;
+    return {
+      id: doc.staffId,
+      organization_id: doc.organization_id,
+      user_id: doc._id.toString(),
+      email: doc.email,
+      full_name: doc.full_name,
+      role: doc.role,
+      is_active: doc.is_active,
+      created_at: doc.created_at.toISOString(),
+      updated_at: doc.updated_at.toISOString(),
+    };
+  }
+
+  async createStaffMember(
+    orgId: string = INITIAL_ORG_ID,
+    data: { full_name: string; email: string; role: UserRole; password?: string }
+  ): Promise<OrganizationMember> {
+    await connectToDatabase();
+    const cleanEmail = data.email.toLowerCase().trim();
+    const existing = await UserModel.findOne({ email: cleanEmail });
+    if (existing) {
+      throw new Error(`A staff member with email ${cleanEmail} already exists`);
+    }
+
+    const staffId = `staff-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const bcrypt = await import("bcryptjs");
+    const password_hash = await bcrypt.default.hash(data.password || "staff123", 10);
+
+    const doc = await UserModel.create({
+      staffId,
+      organization_id: orgId,
+      email: cleanEmail,
+      password_hash,
+      full_name: data.full_name.trim(),
+      role: data.role,
+      is_active: true,
+    });
+
     return {
       id: doc.staffId,
       organization_id: doc.organization_id,
@@ -739,6 +806,48 @@ class MongoService {
   async getEstimatesByTicketId(ticketId: string): Promise<Estimate[]> {
     await connectToDatabase();
     const docs = await EstimateModel.find({ ticket_id: ticketId });
+    return docs.map((d) => ({
+      id: d.estimateId,
+      organization_id: d.organization_id,
+      ticket_id: d.ticket_id,
+      revision_number: d.revision_number,
+      status: d.status,
+      subtotal: d.subtotal,
+      tax_rate: d.tax_rate,
+      tax_amount: d.tax_amount,
+      total_amount: d.total_amount,
+      notes: d.notes || null,
+      created_by: d.created_by || null,
+      items: d.items.map((i) => ({
+        id: i.id,
+        estimate_id: d.estimateId,
+        item_type: i.item_type,
+        description: i.description,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        total_price: i.total_price,
+        created_at: d.created_at.toISOString(),
+      })),
+      approval: d.approval
+        ? {
+            id: d.approval.id,
+            estimate_id: d.estimateId,
+            status: d.approval.status,
+            channel: d.approval.channel,
+            recorded_by: d.approval.recorded_by || null,
+            recorded_by_name: d.approval.recorded_by_name || null,
+            decision_notes: d.approval.decision_notes || null,
+            decided_at: d.approval.decided_at.toISOString(),
+          }
+        : null,
+      created_at: d.created_at.toISOString(),
+      updated_at: d.updated_at.toISOString(),
+    }));
+  }
+
+  async getAllEstimates(orgId: string = INITIAL_ORG_ID): Promise<Estimate[]> {
+    await connectToDatabase();
+    const docs = await EstimateModel.find({ organization_id: orgId }).sort({ created_at: -1 });
     return docs.map((d) => ({
       id: d.estimateId,
       organization_id: d.organization_id,
