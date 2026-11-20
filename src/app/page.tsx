@@ -37,19 +37,25 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link
               href="/track/token-s23-7721-a9b3"
               className="text-xs font-medium text-slate-400 hover:text-white transition-colors hidden sm:block"
             >
-              Customer Tracking Demo
+              Tracking Demo
+            </Link>
+            <Link
+              href="/login"
+              className="text-xs font-medium text-slate-300 hover:text-white transition-colors px-2 py-1"
+            >
+              Staff Sign In
             </Link>
             <Button
               asChild
               className="bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs h-9 px-4 shadow-lg shadow-blue-600/25"
             >
-              <Link href="/dashboard">
-                Launch Workspace
+              <Link href="/register">
+                Onboard Shop
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>

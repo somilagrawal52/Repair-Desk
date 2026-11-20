@@ -9,6 +9,7 @@ import {
   PaymentMethod,
   TicketStatusHistory,
   TicketNote,
+  TicketAttachment,
   Estimate,
   EstimateItem,
   InventoryItem,
@@ -44,6 +45,7 @@ class DataStore {
   private tickets: RepairTicket[] = [...initialTickets];
   private statusHistories: TicketStatusHistory[] = [...initialStatusHistories];
   private notes: TicketNote[] = [...initialNotes];
+  private attachments: TicketAttachment[] = [];
   private inventory: InventoryItem[] = [...initialInventory];
   private estimates: Estimate[] = [...initialEstimates];
   private payments: Payment[] = [...initialPayments];
@@ -477,6 +479,38 @@ class DataStore {
     };
     this.notes.push(newNote);
     return newNote;
+  }
+
+  getAttachments(ticketId: string): TicketAttachment[] {
+    return this.attachments
+      .filter((a) => a.ticket_id === ticketId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  addAttachment(
+    ticketId: string,
+    data: {
+      category: "intake" | "diagnosis" | "repair" | "handover";
+      file_url: string;
+      file_name: string;
+      file_size?: number;
+      mime_type?: string;
+      uploaded_by?: string | null;
+    }
+  ): TicketAttachment {
+    const attachment: TicketAttachment = {
+      id: this.generateUniqueId("att"),
+      ticket_id: ticketId,
+      category: data.category,
+      file_url: data.file_url,
+      file_name: data.file_name,
+      file_size: data.file_size,
+      mime_type: data.mime_type,
+      uploaded_by: data.uploaded_by || null,
+      created_at: new Date().toISOString(),
+    };
+    this.attachments.push(attachment);
+    return attachment;
   }
 
   // --------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -21,6 +21,10 @@ import {
   ShieldAlert,
   ArrowRight,
   Search,
+  Camera,
+  Upload,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
@@ -82,6 +86,8 @@ export default function NewRepairIntakePage() {
   const [staffList, setStaffList] = useState<OrganizationMember[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Load existing customers & staff
   useEffect(() => {
@@ -208,6 +214,24 @@ export default function NewRepairIntakePage() {
       const data = await res.json();
       if (!data.success) {
         throw new Error(data.error || "Failed to create ticket");
+      }
+
+      if (selectedPhotos.length > 0) {
+        for (const file of selectedPhotos) {
+          try {
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("category", "intake");
+            formData.append("caption", "Intake condition record");
+            if (currentUser?.id) formData.append("staffId", currentUser.id);
+            await fetch(`/api/tickets/${data.ticket.id}/photos`, {
+              method: "POST",
+              body: formData,
+            });
+          } catch (uploadErr) {
+            console.warn("Intake photo upload fallback:", uploadErr);
+          }
+        }
       }
 
       toast.success(`Job Card ${data.ticket.ticket_number} created successfully!`);
@@ -616,6 +640,99 @@ export default function NewRepairIntakePage() {
                   className="text-xs h-8 mt-2"
                 />
               </div>
+            </CardContent>
+          </Card>
+
+          {/* SECTION 3B: Intake Condition Photographs */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Camera className="h-4 w-4 text-blue-600" />
+                    Step 3B: Device Photographs (Optional)
+                  </CardTitle>
+                  <CardDescription className="text-xs">
+                    Attach counter inspection photos to record cosmetic scratches, screen cracks, and chassis integrity.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => photoInputRef.current?.click()}
+                  className="h-8 text-xs gap-1.5 border-slate-200"
+                >
+                  <Upload className="w-3.5 h-3.5" /> Select Photos
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <input
+                type="file"
+                ref={photoInputRef}
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const newFiles = Array.from(e.target.files);
+                    setSelectedPhotos((prev) => [...prev, ...newFiles]);
+                  }
+                }}
+              />
+
+              {selectedPhotos.length === 0 ? (
+                <div
+                  onClick={() => photoInputRef.current?.click()}
+                  className="border border-dashed border-slate-200 rounded-xl p-6 text-center bg-slate-50/50 hover:bg-slate-50 cursor-pointer transition-colors"
+                >
+                  <Camera className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-700">Click to upload intake condition photos</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">JPEG, PNG, WebP up to 10MB per file</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {selectedPhotos.map((file, idx) => {
+                      const objectUrl = URL.createObjectURL(file);
+                      return (
+                        <div key={idx} className="relative group border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={objectUrl}
+                            alt={file.name}
+                            className="aspect-square w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPhotos((prev) => prev.filter((_, i) => i !== idx));
+                            }}
+                            className="absolute top-1.5 right-1.5 p-1 bg-black/60 text-white rounded-full hover:bg-rose-600 transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                          <div className="p-1.5 text-[10px] text-slate-600 truncate bg-white border-t border-slate-100">
+                            {file.name}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="text-xs text-blue-600 hover:text-blue-700 h-7"
+                    >
+                      + Add More Photos
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -18,13 +18,14 @@ export async function GET(
       );
     }
 
-    const [history, notes, estimates, payments, receipt, organization] = await Promise.all([
+    const [history, notes, estimates, payments, receipt, organization, attachments] = await Promise.all([
       dbService.getStatusHistory(ticketId),
       dbService.getNotes(ticketId),
       dbService.getEstimatesByTicketId(ticketId),
       dbService.getPaymentsByTicketId(ticketId),
       dbService.getReceiptByTicketId(ticketId),
       dbService.getOrganization(ticket.organization_id),
+      dbService.getAttachments(ticketId),
     ]);
 
     return NextResponse.json({
@@ -36,6 +37,7 @@ export async function GET(
       estimates,
       payments,
       receipt,
+      attachments,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to fetch ticket";

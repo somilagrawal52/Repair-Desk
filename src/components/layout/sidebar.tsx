@@ -17,13 +17,16 @@ import {
   HardHat,
   Smartphone,
   ExternalLink,
+  LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
-  const { currentRole, currentUser } = useAuth();
+  const { currentRole, currentUser, logout } = useAuth();
 
   const isOwnerOrAdmin = currentRole === "owner" || currentRole === "admin";
   const isReceptionist = currentRole === "receptionist";
@@ -177,19 +180,32 @@ export function Sidebar() {
 
       {/* Footer Profile */}
       <div className="p-3 border-t border-slate-800/80 bg-slate-950/40">
-        <div className="flex items-center gap-3 px-2 py-1.5">
-          <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-blue-400">
-            {currentUser?.full_name?.charAt(0) || "U"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold text-slate-200 truncate">
-              {currentUser?.full_name}
+        <div className="flex items-center justify-between px-2 py-1.5">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-8 w-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-blue-400 shrink-0">
+              {currentUser?.full_name?.charAt(0) || "U"}
             </div>
-            <div className="text-[11px] text-slate-400 capitalize flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              {currentRole}
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-semibold text-slate-200 truncate">
+                {currentUser?.full_name || "Guest Staff"}
+              </div>
+              <div className="text-[11px] text-slate-400 capitalize flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                {currentRole}
+              </div>
             </div>
           </div>
+          <button
+            type="button"
+            title="Sign out"
+            onClick={async () => {
+              await logout();
+              router.push("/login");
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800/80 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>

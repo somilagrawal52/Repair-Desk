@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbService } from "@/lib/db-service";
+import { trackingRateLimiter } from "@/lib/rate-limiter";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,31 @@ export async function GET(
   { params }: { params: { token: string } }
 ) {
   try {
+    // Rate Limiting Enforcement
+    const ip =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      request.headers.get("x-real-ip") ||
+      "127.0.0.1";
+
+    const { allowed, remaining, resetInSeconds } = trackingRateLimiter.check(ip);
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Too many tracking status requests. Please wait before refreshing again.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": resetInSeconds.toString(),
+            "X-RateLimit-Limit": "30",
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": resetInSeconds.toString(),
+          },
+        }
+      );
+    }
+
     const token = params.token;
     if (!token || token.length < 5) {
       return NextResponse.json(
@@ -67,13 +93,22 @@ export async function GET(
       message: h.notes,
     }));
 
-    return NextResponse.json({
-      success: true,
-      ticket: sanitizedTicket,
-      shop: sanitizedShop,
-      timeline,
-      notes: customerVisibleNotes,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        ticket: sanitizedTicket,
+        shop: sanitizedShop,
+        timeline,
+        notes: customerVisibleNotes,
+      },
+      {
+        headers: {
+          "X-RateLimit-Limit": "30",
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": resetInSeconds.toString(),
+        },
+      }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Tracking lookup failed";
     return NextResponse.json({ success: false, error: message }, { status: 500 });

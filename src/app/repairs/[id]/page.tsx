@@ -26,6 +26,7 @@ import {
   ExternalLink,
   Plus,
   FileCheck,
+  Camera,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { StatusBadge, PaymentStatusBadge } from "@/components/repairs/status-badge";
@@ -43,6 +44,7 @@ import {
   PaymentMethod,
   TicketStatusHistory,
   TicketNote,
+  TicketAttachment,
   Estimate,
   Payment,
   Receipt,
@@ -50,6 +52,7 @@ import {
 } from "@/types";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
+import { TicketPhotoGallery } from "@/components/repairs/ticket-photo-gallery";
 
 const STATUS_PIPELINE: RepairStatus[] = [
   "received",
@@ -78,6 +81,7 @@ function RepairDetailsContent() {
   const [estimates, setEstimates] = useState<Estimate[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modals & form state
@@ -126,6 +130,7 @@ function RepairDetailsContent() {
         setEstimates(data.estimates);
         setPayments(data.payments);
         setReceipt(data.receipt || null);
+        setAttachments(data.attachments || []);
         setRecipientName(data.ticket.customer?.full_name || "");
       } else {
         toast.error(data.error || "Failed to load repair details");
@@ -521,13 +526,16 @@ function RepairDetailsContent() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="bg-slate-200/80 p-1 w-full justify-start rounded-lg">
                 <TabsTrigger value="timeline" className="text-xs">
-                  Activity & Diagnostic Notes ({notes.length})
+                  Notes & Findings ({notes.length})
+                </TabsTrigger>
+                <TabsTrigger value="photos" className="text-xs">
+                  Device Photos ({attachments.length})
                 </TabsTrigger>
                 <TabsTrigger value="estimates" className="text-xs">
-                  Estimates & Approvals ({estimates.length})
+                  Estimates ({estimates.length})
                 </TabsTrigger>
                 <TabsTrigger value="payments" className="text-xs">
-                  Payments & Invoicing ({payments.length})
+                  Payments ({payments.length})
                 </TabsTrigger>
                 <TabsTrigger value="jobcard" className="text-xs">
                   Print Job Card (A4)
@@ -641,6 +649,18 @@ function RepairDetailsContent() {
                       </div>
                     ))}
                   </div>
+                </div>
+              </TabsContent>
+
+              {/* TAB: Condition Photographs */}
+              <TabsContent value="photos" className="pt-2">
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                  <TicketPhotoGallery
+                    ticketId={ticket.id}
+                    initialPhotos={attachments}
+                    onPhotoUploaded={fetchTicketDetails}
+                    canUpload={true}
+                  />
                 </div>
               </TabsContent>
 
@@ -948,6 +968,59 @@ function RepairDetailsContent() {
                   <span className="text-slate-500">Deposited Accessories:</span>{" "}
                   <strong>{ticket.accessories_received || "Device Only"}</strong>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Condition Photographs Quick Panel */}
+            <Card className="border-slate-200 shadow-sm">
+              <CardHeader className="pb-3 border-b border-slate-100">
+                <CardTitle className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center justify-between">
+                  <span>Device Photos ({attachments.length})</span>
+                  <Camera className="h-4 w-4 text-blue-600" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-3 space-y-2">
+                {attachments.length === 0 ? (
+                  <div className="text-center py-3 text-slate-500 text-xs">
+                    <p className="text-[11px]">No condition photos attached.</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setActiveTab("photos")}
+                      className="mt-1 h-7 text-xs text-blue-600 hover:text-blue-700"
+                    >
+                      + Upload Intake Photo
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {attachments.slice(0, 3).map((att) => (
+                        <div
+                          key={att.id}
+                          onClick={() => setActiveTab("photos")}
+                          className="aspect-square rounded-lg border border-slate-200 overflow-hidden relative cursor-pointer hover:opacity-80 transition-opacity"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={att.file_url}
+                            alt={att.file_name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {attachments.length > 3 && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("photos")}
+                        className="text-[11px] font-semibold text-blue-600 hover:underline mt-2 block text-center w-full"
+                      >
+                        View all {attachments.length} photos →
+                      </button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

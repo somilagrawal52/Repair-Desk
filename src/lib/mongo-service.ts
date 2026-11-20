@@ -9,6 +9,7 @@ import { InventoryItemModel } from "./models/InventoryItem";
 import { PaymentModel } from "./models/Payment";
 import { EstimateModel } from "./models/Estimate";
 import { TicketNoteModel } from "./models/TicketNote";
+import { TicketAttachmentModel } from "./models/TicketAttachment";
 import { TicketStatusHistoryModel } from "./models/TicketStatusHistory";
 import { ReceiptModel } from "./models/Receipt";
 import { AuditLogModel } from "./models/AuditLog";
@@ -22,6 +23,7 @@ import {
   PaymentMethod,
   TicketStatusHistory,
   TicketNote,
+  TicketAttachment,
   Estimate,
   InventoryItem,
   Payment,
@@ -674,6 +676,59 @@ class MongoService {
       author_name: doc.author_name || null,
       note_type: doc.note_type,
       content: doc.content,
+      created_at: doc.created_at.toISOString(),
+    };
+  }
+
+  async getAttachments(ticketId: string): Promise<TicketAttachment[]> {
+    await connectToDatabase();
+    const docs = await TicketAttachmentModel.find({ ticket_id: ticketId }).sort({ created_at: -1 });
+    return docs.map((d) => ({
+      id: d.attachmentId,
+      ticket_id: d.ticket_id,
+      category: d.category,
+      file_url: d.file_url,
+      file_name: d.file_name,
+      file_size: d.file_size,
+      mime_type: d.mime_type,
+      uploaded_by: d.uploaded_by || null,
+      created_at: d.created_at.toISOString(),
+    }));
+  }
+
+  async addAttachment(
+    ticketId: string,
+    data: {
+      category: "intake" | "diagnosis" | "repair" | "handover";
+      file_url: string;
+      file_name: string;
+      file_size?: number;
+      mime_type?: string;
+      uploaded_by?: string | null;
+    }
+  ): Promise<TicketAttachment> {
+    await connectToDatabase();
+    const attachmentId = `att-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const doc = await TicketAttachmentModel.create({
+      attachmentId,
+      ticket_id: ticketId,
+      category: data.category,
+      file_url: data.file_url,
+      file_name: data.file_name,
+      file_size: data.file_size || 0,
+      mime_type: data.mime_type || "image/jpeg",
+      uploaded_by: data.uploaded_by || null,
+    });
+
+    return {
+      id: doc.attachmentId,
+      ticket_id: doc.ticket_id,
+      category: doc.category,
+      file_url: doc.file_url,
+      file_name: doc.file_name,
+      file_size: doc.file_size,
+      mime_type: doc.mime_type,
+      uploaded_by: doc.uploaded_by || null,
       created_at: doc.created_at.toISOString(),
     };
   }

@@ -10,6 +10,7 @@ import {
   PaymentMethod,
   TicketStatusHistory,
   TicketNote,
+  TicketAttachment,
   Estimate,
   InventoryItem,
   Payment,
@@ -253,6 +254,38 @@ class DbService {
       }
     }
     return dataStore.addNote(ticketId, content, noteType, staffId);
+  }
+
+  async getAttachments(ticketId: string): Promise<TicketAttachment[]> {
+    if (this.useMongo) {
+      try {
+        return await mongoService.getAttachments(ticketId);
+      } catch (e) {
+        console.warn("MongoDB getAttachments fallback to memory:", e);
+      }
+    }
+    return dataStore.getAttachments(ticketId);
+  }
+
+  async addAttachment(
+    ticketId: string,
+    data: {
+      category: "intake" | "diagnosis" | "repair" | "handover";
+      file_url: string;
+      file_name: string;
+      file_size?: number;
+      mime_type?: string;
+      uploaded_by?: string | null;
+    }
+  ): Promise<TicketAttachment> {
+    if (this.useMongo) {
+      try {
+        return await mongoService.addAttachment(ticketId, data);
+      } catch (e) {
+        console.warn("MongoDB addAttachment fallback to memory:", e);
+      }
+    }
+    return dataStore.addAttachment(ticketId, data);
   }
 
   async getEstimatesByTicketId(ticketId: string): Promise<Estimate[]> {
