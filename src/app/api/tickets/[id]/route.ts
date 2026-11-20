@@ -87,6 +87,19 @@ export async function PATCH(
         body.handoverNotes,
         body.staffId
       );
+    } else if (body.action === "reopen") {
+      if (!body.reopenReason?.trim()) {
+        return NextResponse.json(
+          { success: false, error: "An audited reason is required to reopen this repair ticket" },
+          { status: 400 }
+        );
+      }
+      updatedTicket = await dbService.reopenTicket(
+        ticketId,
+        body.targetStatus || "under_diagnosis",
+        body.reopenReason.trim(),
+        body.staffId
+      );
     } else {
       return NextResponse.json(
         { success: false, error: "Unknown action specified" },

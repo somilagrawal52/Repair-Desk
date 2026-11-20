@@ -77,7 +77,7 @@ describe("RepairDesk Critical Automated Tests", () => {
   });
 
   // 4. Invalid Status Transitions Blocked
-  it("blocks modifying delivered tickets without explicit reopening workflow", () => {
+  it("blocks modifying delivered and cancelled tickets without explicit reopening workflow", () => {
     // Ticket 5 is delivered in seed data
     const deliveredTicket = dataStore.getTickets(testOrgId).find((t) => t.current_status === "delivered");
     expect(deliveredTicket).toBeDefined();
@@ -85,6 +85,42 @@ describe("RepairDesk Critical Automated Tests", () => {
     expect(() => {
       dataStore.updateTicketStatus(deliveredTicket!.id, "in_repair");
     }).toThrow(/Delivered repairs cannot be altered directly/);
+
+    // Cancelled ticket check
+    const newTicket = dataStore.createTicket(testOrgId, {
+      customerData: { full_name: "Cancel Test", phone: "+91 99999 11111" },
+      deviceData: { category: "smartphone", brand: "Apple", model: "iPhone 11" },
+      reported_problem: "Unrepairable board",
+      condition_checklist: {
+        screen_condition: "flawless",
+        power_status: "dead",
+        charging_status: "not_charging",
+        liquid_damage: "confirmed_corrosion",
+        body_condition: "excellent",
+        accessories_received: [],
+      },
+    });
+
+    dataStore.updateTicketStatus(newTicket.id, "cancelled");
+
+    expect(() => {
+      dataStore.updateTicketStatus(newTicket.id, "in_repair");
+    }).toThrow(/Cancelled repairs cannot be altered directly/);
+
+    // Test audited reopening
+    const reopened = dataStore.reopenTicket(
+      newTicket.id,
+      "under_diagnosis",
+      "Customer brought new motherboard replacement donor unit",
+      "staff-owner-1"
+    );
+    expect(reopened.current_status).toBe("under_diagnosis");
+
+    const history = dataStore.getStatusHistory(newTicket.id);
+    const reopenRecord = history.find((h) => h.notes?.includes("AUDITED REOPENING"));
+    expect(reopenRecord).toBeDefined();
+    expect(reopenRecord?.old_status).toBe("cancelled");
+    expect(reopenRecord?.new_status).toBe("under_diagnosis");
   });
 
   // 5. Estimate Approvals Recorded Correctly

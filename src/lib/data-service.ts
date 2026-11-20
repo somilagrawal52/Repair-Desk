@@ -372,6 +372,12 @@ class DataStore {
       );
     }
 
+    if (ticket.current_status === "cancelled" && newStatus !== "cancelled") {
+      throw new Error(
+        "Cancelled repairs cannot be altered directly. Please use an audited reopening workflow."
+      );
+    }
+
     const oldStatus = ticket.current_status;
     ticket.current_status = newStatus;
     ticket.updated_at = new Date().toISOString();
@@ -393,6 +399,56 @@ class DataStore {
       old_status: oldStatus,
       new_status: newStatus,
       notes,
+    });
+
+    return this.hydrateTicket(ticket);
+  }
+
+  reopenTicket(
+    ticketId: string,
+    targetStatus: RepairStatus = "under_diagnosis",
+    reopenReason: string,
+    staffId?: string
+  ): RepairTicket {
+    const ticket = this.tickets.find((t) => t.id === ticketId);
+    if (!ticket) throw new Error("Repair ticket not found");
+
+    if (ticket.current_status !== "delivered" && ticket.current_status !== "cancelled") {
+      throw new Error("Only delivered or cancelled tickets can be reopened.");
+    }
+
+    const oldStatus = ticket.current_status;
+    ticket.current_status = targetStatus;
+    ticket.delivered_at = null;
+    ticket.updated_at = new Date().toISOString();
+
+    const staff = staffId ? this.getStaffById(staffId) : undefined;
+
+    this.statusHistories.push({
+      id: this.generateUniqueId("hist"),
+      ticket_id: ticket.id,
+      old_status: oldStatus,
+      new_status: targetStatus,
+      changed_by: staff?.id || null,
+      changed_by_name: staff?.full_name || "Staff",
+      notes: `AUDITED REOPENING: ${reopenReason}`,
+      created_at: new Date().toISOString(),
+    });
+
+    this.notes.push({
+      id: this.generateUniqueId("note"),
+      ticket_id: ticket.id,
+      author_id: staff?.id || null,
+      author_name: staff?.full_name || "Staff",
+      note_type: "internal",
+      content: `⚠️ AUDITED REOPENING: Ticket reopened to ${targetStatus.replace(/_/g, " ")}. Reason: ${reopenReason}`,
+      created_at: new Date().toISOString(),
+    });
+
+    this.logAudit(ticket.organization_id, staff?.id || null, "TICKET_REOPENED", "repair_ticket", ticket.id, {
+      old_status: oldStatus,
+      new_status: targetStatus,
+      reopenReason,
     });
 
     return this.hydrateTicket(ticket);

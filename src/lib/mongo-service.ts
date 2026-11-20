@@ -629,6 +629,10 @@ class MongoService {
       throw new Error("Delivered repairs cannot be altered directly. Please use an audited reopening workflow.");
     }
 
+    if (doc.current_status === "cancelled" && newStatus !== "cancelled") {
+      throw new Error("Cancelled repairs cannot be altered directly. Please use an audited reopening workflow.");
+    }
+
     const oldStatus = doc.current_status;
     doc.current_status = newStatus;
     await doc.save();
@@ -656,6 +660,51 @@ class MongoService {
       { new: true }
     );
     if (!doc) throw new Error("Repair ticket not found");
+    const updated = await this.getTicketById(ticketId);
+    return updated!;
+  }
+
+  async reopenTicket(
+    ticketId: string,
+    targetStatus: RepairStatus = "under_diagnosis",
+    reopenReason: string,
+    staffId?: string
+  ): Promise<RepairTicket> {
+    await connectToDatabase();
+    const doc = await RepairTicketModel.findOne({ ticketId });
+    if (!doc) throw new Error("Repair ticket not found");
+
+    if (doc.current_status !== "delivered" && doc.current_status !== "cancelled") {
+      throw new Error("Only delivered or cancelled tickets can be reopened.");
+    }
+
+    const oldStatus = doc.current_status;
+    doc.current_status = targetStatus;
+    if (doc.delivered_at) {
+      doc.delivered_at = null;
+    }
+    await doc.save();
+
+    const staff = staffId ? await this.getStaffById(staffId) : null;
+    await TicketStatusHistoryModel.create({
+      historyId: `hist-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      ticket_id: ticketId,
+      old_status: oldStatus,
+      new_status: targetStatus,
+      changed_by: staff?.id || null,
+      changed_by_name: staff?.full_name || "Staff",
+      notes: `AUDITED REOPENING: ${reopenReason}`,
+    });
+
+    await TicketNoteModel.create({
+      noteId: `note-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      ticket_id: ticketId,
+      author_id: staff?.id || null,
+      author_name: staff?.full_name || "Staff",
+      note_type: "internal",
+      content: `⚠️ AUDITED REOPENING: Ticket reopened to ${targetStatus.replace(/_/g, " ")}. Reason: ${reopenReason}`,
+    });
+
     const updated = await this.getTicketById(ticketId);
     return updated!;
   }

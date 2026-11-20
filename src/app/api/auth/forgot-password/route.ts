@@ -18,18 +18,31 @@ export async function POST(request: NextRequest) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const DEMO_ALIASES: Record<string, string> = {
+      "owner@techfix.in": "vikram@techfixindore.in",
+      "vikram@techfix.in": "vikram@techfixindore.in",
+      "reception@techfix.in": "sneha@techfixindore.in",
+      "priya@techfix.in": "sneha@techfixindore.in",
+      "tech1@techfix.in": "amit.tech@techfixindore.in",
+      "rahul@techfix.in": "amit.tech@techfixindore.in",
+    };
+    const lookupEmail = DEMO_ALIASES[cleanEmail] || cleanEmail;
     let found = false;
 
     try {
       await connectToDatabase();
-      const user = await UserModel.findOne({ email: cleanEmail });
+      const user = await UserModel.findOne({
+        $or: [{ email: lookupEmail }, { email: cleanEmail }],
+      });
       if (user) found = true;
     } catch {
       // ignore
     }
 
     if (!found) {
-      found = initialStaff.some((s) => s.email.toLowerCase() === cleanEmail);
+      found = initialStaff.some(
+        (s) => s.email.toLowerCase() === lookupEmail || s.email.toLowerCase() === cleanEmail
+      );
     }
 
     if (!found) {

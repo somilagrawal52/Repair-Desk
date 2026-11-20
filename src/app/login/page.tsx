@@ -24,8 +24,8 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState("vikram@techfix.in");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("vikram@techfixindore.in");
+  const [password, setPassword] = useState("password123");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -50,14 +50,14 @@ export default function LoginPage() {
 
   const fillDemo = (role: "owner" | "receptionist" | "technician") => {
     if (role === "owner") {
-      setEmail("vikram@techfix.in");
-      setPassword("admin123");
+      setEmail("vikram@techfixindore.in");
+      setPassword("password123");
     } else if (role === "receptionist") {
-      setEmail("priya@techfix.in");
-      setPassword("reception123");
+      setEmail("sneha@techfixindore.in");
+      setPassword("password123");
     } else if (role === "technician") {
-      setEmail("rahul@techfix.in");
-      setPassword("tech123");
+      setEmail("amit.tech@techfixindore.in");
+      setPassword("password123");
     }
   };
 
@@ -170,7 +170,7 @@ export default function LoginPage() {
                 className="px-2.5 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 text-slate-700 text-center transition-all"
               >
                 Front Desk
-                <span className="block text-[10px] text-slate-400 font-normal">Priya</span>
+                <span className="block text-[10px] text-slate-400 font-normal">Sneha</span>
               </button>
               <button
                 type="button"
@@ -178,7 +178,7 @@ export default function LoginPage() {
                 className="px-2.5 py-2 text-xs font-bold rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 text-slate-700 text-center transition-all"
               >
                 Technician
-                <span className="block text-[10px] text-slate-400 font-normal">Rahul</span>
+                <span className="block text-[10px] text-slate-400 font-normal">Amit</span>
               </button>
             </div>
           </div>

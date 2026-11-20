@@ -2,14 +2,18 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, UserCircle, MapPin, Shield } from "lucide-react";
+import { Search, Plus, UserCircle, MapPin, Shield, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { initialStaff } from "@/lib/mock-data";
 import { UserRole } from "@/types";
 
-export function TopNav() {
+interface TopNavProps {
+  onOpenMobileMenu?: () => void;
+}
+
+export function TopNav({ onOpenMobileMenu }: TopNavProps = {}) {
   const router = useRouter();
   const { currentUser, currentRole, switchUser, canIntakeDevices } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,7 +25,19 @@ export function TopNav() {
   };
 
   return (
-    <header className="h-14 border-b border-slate-200 bg-white px-6 flex items-center justify-between gap-4 sticky top-0 z-30 no-print">
+    <header className="h-14 border-b border-slate-200 bg-white px-4 sm:px-6 flex items-center justify-between gap-3 sticky top-0 z-30 no-print">
+      {/* Mobile Menu Trigger */}
+      {onOpenMobileMenu && (
+        <button
+          type="button"
+          onClick={onOpenMobileMenu}
+          className="md:hidden p-2 -ml-1 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+          title="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Search Input */}
       <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />

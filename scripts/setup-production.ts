@@ -93,10 +93,10 @@ async function main() {
   console.log(`  Tickets:       ${ticketCount}`);
   console.log(`  Inventory:     ${inventoryCount} items`);
   console.log("-------------------------------------------------------------------");
-  console.log("  Default Admin Credentials (TechFix Demo):");
-  console.log("  • Owner:        owner@techfix.in       (Password: password123)");
-  console.log("  • Receptionist: reception@techfix.in   (Password: password123)");
-  console.log("  • Technician:   tech1@techfix.in       (Password: password123)");
+  console.log("  Default Admin Credentials (TechFix Indore Demo):");
+  console.log("  • Owner:        vikram@techfixindore.in (or owner@techfix.in)     [Password: password123]");
+  console.log("  • Receptionist: sneha@techfixindore.in  (or reception@techfix.in) [Password: password123]");
+  console.log("  • Technician:   amit.tech@techfixindore.in (or tech1@techfix.in)  [Password: password123]");
   console.log("-------------------------------------------------------------------");
   console.log("  Ready to launch: npm run build && npm start");
   console.log("===================================================================\n");

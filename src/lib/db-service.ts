@@ -251,6 +251,22 @@ class DbService {
     return dataStore.completeHandover(ticketId, recipientName, handoverNotes, staffId);
   }
 
+  async reopenTicket(
+    ticketId: string,
+    targetStatus: RepairStatus = "under_diagnosis",
+    reopenReason: string,
+    staffId?: string
+  ): Promise<RepairTicket> {
+    if (this.useMongo) {
+      try {
+        return await mongoService.reopenTicket(ticketId, targetStatus, reopenReason, staffId);
+      } catch (e) {
+        console.warn("MongoDB reopenTicket fallback to memory:", e);
+      }
+    }
+    return dataStore.reopenTicket(ticketId, targetStatus, reopenReason, staffId);
+  }
+
   async getStatusHistory(ticketId: string): Promise<TicketStatusHistory[]> {
     if (this.useMongo) {
       try {

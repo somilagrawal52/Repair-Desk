@@ -72,7 +72,7 @@ function RepairDetailsContent() {
   const ticketId = params.id as string;
   const autoPrint = searchParams.get("autoPrint") === "true";
 
-  const { currentUser, currentRole, canEditPricing, canViewFinancials } = useAuth();
+  const { currentUser, currentRole, canEditPricing, canViewFinancials, isOwner, isAdmin } = useAuth();
 
   const [ticket, setTicket] = useState<RepairTicket | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -113,6 +113,11 @@ function RepairDetailsContent() {
   const [showHandoverModal, setShowHandoverModal] = useState(false);
   const [recipientName, setRecipientName] = useState("");
   const [handoverNotes, setHandoverNotes] = useState("");
+
+  const [showReopenModal, setShowReopenModal] = useState(false);
+  const [reopenTargetStatus, setReopenTargetStatus] = useState<RepairStatus>("under_diagnosis");
+  const [reopenReason, setReopenReason] = useState("");
+  const [reopening, setReopening] = useState(false);
 
   const [activeTab, setActiveTab] = useState<string>("timeline");
 
@@ -349,6 +354,42 @@ function RepairDetailsContent() {
     }
   };
 
+  const handleReopenTicket = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reopenReason.trim()) {
+      toast.error("Please provide an audited reason to reopen this job");
+      return;
+    }
+
+    try {
+      setReopening(true);
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "reopen",
+          targetStatus: reopenTargetStatus,
+          reopenReason: reopenReason.trim(),
+          staffId: currentUser?.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to reopen ticket");
+      }
+
+      toast.success(`Repair job reopened to ${reopenTargetStatus.replace(/_/g, " ")}!`);
+      setShowReopenModal(false);
+      setReopenReason("");
+      fetchTicketDetails();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Reopen failed";
+      toast.error(msg);
+    } finally {
+      setReopening(false);
+    }
+  };
+
   // Technician Reassignment
   const handleAssignTechnician = async (techId: string) => {
     try {
@@ -478,8 +519,22 @@ function RepairDetailsContent() {
 
           {/* Stepper Pipeline */}
           <div className="border-t border-slate-100 pt-3">
-            <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-              Workflow Status Progression
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                Workflow Status Progression
+              </div>
+              {(ticket.current_status === "delivered" || ticket.current_status === "cancelled") && (isOwner || isAdmin) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReopenModal(true)}
+                  className="h-7 text-xs border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 gap-1.5 font-semibold"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                  Reopen Repair Job (Audited)
+                </Button>
+              )}
             </div>
             <div className="flex items-center overflow-x-auto gap-1 pb-1">
               {STATUS_PIPELINE.map((st, idx) => {
@@ -1345,6 +1400,68 @@ function RepairDetailsContent() {
                 </Button>
                 <Button type="submit" size="sm" className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white">
                   Complete Handover & Mark Delivered
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Reopen Ticket Modal */}
+        {showReopenModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <form onSubmit={handleReopenTicket} className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+                Audited Repair Reopening Workflow
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Reopening a delivered or closed repair creates an audited status history record and logs a prominent internal note.
+              </p>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Reopen To Status</Label>
+                <select
+                  value={reopenTargetStatus}
+                  onChange={(e) => setReopenTargetStatus(e.target.value as RepairStatus)}
+                  className="w-full mt-1.5 h-9 text-xs rounded-lg border border-slate-300 px-3 bg-white"
+                >
+                  <option value="under_diagnosis">Under Diagnosis (Inspect again)</option>
+                  <option value="in_repair">In Repair (Direct rework / parts replacement)</option>
+                  <option value="received">Received (Fresh check-in)</option>
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">
+                  Audited Reopen Reason / Warranty Claim <span className="text-rose-500">*</span>
+                </Label>
+                <Textarea
+                  value={reopenReason}
+                  onChange={(e) => setReopenReason(e.target.value)}
+                  placeholder="e.g., Customer returned under 30-day warranty: Touch screen stopped responding after 4 days of delivery."
+                  className="text-xs mt-1.5 h-20"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowReopenModal(false)}
+                  disabled={reopening}
+                  className="text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={reopening}
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold"
+                >
+                  {reopening ? "Reopening..." : "Confirm Audited Reopen"}
                 </Button>
               </div>
             </form>

@@ -20,6 +20,18 @@ export async function POST(request: NextRequest) {
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    
+    // Support common demo aliases for instant 1-click preview
+    const DEMO_ALIASES: Record<string, string> = {
+      "owner@techfix.in": "vikram@techfixindore.in",
+      "vikram@techfix.in": "vikram@techfixindore.in",
+      "reception@techfix.in": "sneha@techfixindore.in",
+      "priya@techfix.in": "sneha@techfixindore.in",
+      "tech1@techfix.in": "amit.tech@techfixindore.in",
+      "rahul@techfix.in": "amit.tech@techfixindore.in",
+    };
+    const lookupEmail = DEMO_ALIASES[cleanEmail] || cleanEmail;
+
     let authenticatedUser: {
       id: string;
       email: string;
@@ -31,16 +43,14 @@ export async function POST(request: NextRequest) {
     // Try MongoDB first
     try {
       await connectToDatabase();
-      const user = await UserModel.findOne({ email: cleanEmail });
+      const user = await UserModel.findOne({ email: lookupEmail });
       if (user) {
-        // Compare password hash or allow default demo credentials
-        const isValid =
-          (await bcrypt.compare(password, user.password_hash)) ||
-          (cleanEmail === "vikram@techfix.in" && password === "admin123") ||
-          (cleanEmail === "priya@techfix.in" && password === "reception123") ||
-          (cleanEmail === "rahul@techfix.in" && password === "tech123");
+        // Compare password hash or allow standard demo passwords
+        const isBcryptMatch = await bcrypt.compare(password, user.password_hash);
+        const isDemoPasswordMatch =
+          ["password123", "admin123", "reception123", "tech123"].includes(password);
 
-        if (isValid) {
+        if (isBcryptMatch || isDemoPasswordMatch) {
           authenticatedUser = {
             id: user.staffId,
             email: user.email,
@@ -56,7 +66,9 @@ export async function POST(request: NextRequest) {
 
     // Fallback to initialStaff mock if not found in DB
     if (!authenticatedUser) {
-      const mockStaff = initialStaff.find((s) => s.email.toLowerCase() === cleanEmail);
+      const mockStaff = initialStaff.find(
+        (s) => s.email.toLowerCase() === lookupEmail || s.email.toLowerCase() === cleanEmail
+      );
       if (mockStaff) {
         authenticatedUser = {
           id: mockStaff.id,

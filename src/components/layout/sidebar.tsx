@@ -18,12 +18,18 @@ import {
   Smartphone,
   ExternalLink,
   LogOut,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 
-export function Sidebar() {
+interface SidebarProps {
+  className?: string;
+  onClose?: () => void;
+}
+
+export function Sidebar({ className, onClose }: SidebarProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const { currentRole, currentUser, logout } = useAuth();
@@ -103,10 +109,19 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 min-h-screen border-r border-slate-800 select-none">
+    <aside
+      className={cn(
+        "w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 min-h-screen border-r border-slate-800 select-none",
+        className
+      )}
+    >
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
+        <Link
+          href="/dashboard"
+          onClick={() => onClose?.()}
+          className="flex items-center gap-2.5"
+        >
           <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-900/40">
             <Smartphone className="h-5 w-5" />
           </div>
@@ -120,6 +135,16 @@ export function Sidebar() {
             <div className="text-[11px] text-slate-400">TechFix Repair Center</div>
           </div>
         </Link>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Items */}
@@ -139,6 +164,7 @@ export function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
+                onClick={() => onClose?.()}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all group",
                   isActive
